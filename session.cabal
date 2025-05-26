@@ -1,0 +1,51 @@
+cabal-version:   3.12
+name:            session
+version:         0.1.0.0
+
+-- synopsis:
+-- description:
+license:         BSD-3-Clause
+license-file:    LICENSE
+author:          Massimo Bortolato
+maintainer:      massimo.bortolato@gmail.com
+
+-- copyright:
+category:        Web
+build-type:      Simple
+extra-doc-files: CHANGELOG.md
+
+-- extra-source-files:
+
+common warnings
+  ghc-options: -Wall
+
+library
+  import:           warnings
+  exposed-modules:
+    Session.Backends.Postgres
+    Session.Frontends.Scotty
+    Session.Session
+
+  -- other-modules:
+  -- other-extensions:
+  build-depends:
+    , base               ^>=4.20.0.0
+    , base64
+    , bytestring
+    , crypton
+    , lucid2
+    , mtl
+    , network
+    , postgresql-simple
+    , regex-tdfa
+    , resource-pool
+    , scotty
+    , text
+    , time
+    , transformers
+    , unliftio-core
+    , uuid
+    , wai
+
+  hs-source-dirs:   src
+  default-language: GHC2024
