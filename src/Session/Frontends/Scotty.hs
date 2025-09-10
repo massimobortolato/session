@@ -37,9 +37,8 @@ newtype ScottyAppM backend a = ScottyAppM
 type ActionM backend = ActionT (ScottyAppM backend)
 
 --------------------------------------------------------------------------------
-scottyS :: (SessionBackend d) => Int -> (ScottyAppSettings d) -> ScottyT (ScottyAppM d) () -> IO ()
-scottyS port config app =
-  scottyT port runInIO app
+scottyS :: (SessionBackend d) => Int -> ScottyAppSettings d -> ScottyT (ScottyAppM d) () -> IO ()
+scottyS port config = scottyT port runInIO
  where
   runInIO =
     flip (runReaderT . runScottyAppM) config
