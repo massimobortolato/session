@@ -51,7 +51,7 @@ newDbConnection connectionString usersTableName sessionsTableName =
       maxResources
   initQuery =
     """
-    CREATE TABLE users IF NOT EXISTS (
+    CREATE TABLE IF NOT EXISTS users (
       id               UUID NOT NULL UNIQUE PRIMARY KEY,
       fullname         TEXT NOT NULL,
       email            TEXT UNIQUE NOT NULL,
@@ -59,7 +59,7 @@ newDbConnection connectionString usersTableName sessionsTableName =
       created_at       TIMESTAMP WITH TIME ZONE NOT NULL,
       last_login       TIMESTAMP WITH TIME ZONE
     );
-    CREATE TABLE sessions IF NOT EXISTS (
+    CREATE TABLE IF NOT EXISTS sessions (
       session_token    TEXT NOT NULL UNIQUE PRIMARY KEY,
       csrf_token       TEXT NOT NULL UNIQUE,
       user_id          UUID NOT NULL,
