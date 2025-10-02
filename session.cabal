@@ -1,12 +1,10 @@
 cabal-version:   3.12
 name:            session
 version:         0.1.0.0
-
 license:         BSD-3-Clause
 license-file:    LICENSE
 author:          Massimo Bortolato
 maintainer:      massimo.bortolato@gmail.com
-
 copyright:       Massimo Bortolato (2025)
 category:        Web
 build-type:      Simple
@@ -25,23 +23,40 @@ library
     Session.Session
 
   build-depends:
-    , base               
-    , base64             
-    , bytestring         
-    , crypton            
-    , lucid2             
-    , mtl                
-    , network            
-    , postgresql-simple  
-    , regex-tdfa         
-    , resource-pool      
-    , scotty             
-    , text               
-    , time               
-    , transformers       
-    , unliftio-core      
-    , uuid               
-    , wai                
+    , base
+    , base64
+    , bytestring
+    , crypton
+    , lucid2
+    , mtl
+    , network
+    , postgresql-simple
+    , regex-tdfa
+    , resource-pool
+    , scotty
+    , text
+    , time
+    , transformers
+    , unliftio-core
+    , uuid
+    , wai
 
   hs-source-dirs:   src
+  default-language: GHC2024
+
+executable session2
+  import:           warnings
+  main-is:          Main.hs
+  other-modules:
+    Pages
+    Types
+
+  build-depends:
+    , base
+    , lucid2
+    , session
+    , text
+    , scotty
+
+  hs-source-dirs:   app
   default-language: GHC2024

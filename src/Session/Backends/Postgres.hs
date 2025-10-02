@@ -19,24 +19,15 @@ import Database.PostgreSQL.Simple qualified as P
 import Session.Session
 
 --------------------------------------------------------------------------------
-data DB = DB
-  { pool :: Pool P.Connection
-  , usersTable :: String
-  , sessionsTable :: String
-  }
+newtype DB = DB {pool :: Pool P.Connection}
 
 --------------------------------------------------------------------------------
-newDbConnection :: ByteString -> String -> String -> IO DB
-newDbConnection connectionString usersTableName sessionsTableName =
+newDbConnection :: ByteString -> IO DB
+newDbConnection connectionString =
   newPool config'
     >>= \pool ->
       withResource pool (`P.execute_` initQuery)
-        >> pure
-          DB
-            { pool = pool
-            , usersTable = usersTableName
-            , sessionsTable = sessionsTableName
-            }
+        >> pure DB{pool = pool}
  where
   connect = P.connectPostgreSQL connectionString
   close = P.close
@@ -77,7 +68,7 @@ instance SessionBackend DB where
 
 --------------------------------------------------------------------------------
 newSession' :: DB -> Session -> SessionM Session
-newSession' DB{pool, usersTable, sessionsTable} session =
+newSession' DB{pool} session =
   liftIO (catch iogo iohandler) >>= except
  where
   Session{token, csrf_token, last_request, ip_address, user = User{user_id}} = session
@@ -86,10 +77,8 @@ newSession' DB{pool, usersTable, sessionsTable} session =
     withResource pool \conn ->
       P.execute
         conn
-        "UPDATE ? SET last_login=? WHERE id=?; \
-        \INSERT INTO ? (session_token, csrf_token, user_id, ip_address, last_request)\
-        \VALUES (?, ?, ?, ?, ?)"
-        (usersTable, last_request, user_id, sessionsTable, token, csrf_token, user_id, ip_address, last_request)
+        "UPDATE users SET last_login=? WHERE id=?; INSERT INTO sessions (session_token, csrf_token, user_id, ip_address, last_request) VALUES(?, ?, ?, ?, ?)"
+        (last_request, user_id, token, csrf_token, user_id, ip_address, last_request)
         >> pure (Right session)
 
   iohandler (SomeException e) =

@@ -52,9 +52,11 @@ type Password = ByteString
 type HashSalt = ByteString
 type IpAddress = ByteString
 
-newtype ValidatedEmail = ValidatedEmail Email
+--------------------------------------------------------------------------------
+newtype ValidatedEmail = ValidatedEmail Email deriving newtype (Show)
 newtype PasswordHash = PasswordHash ByteString
 
+--------------------------------------------------------------------------------
 data SessionConfig = SessionConfig
   { hashSalt :: HashSalt
   , sessionExpireSeconds :: Int
@@ -88,7 +90,6 @@ data SessionError
   | NoSession
   | DuplicateUser
   | DatabaseError String
-  deriving (Show)
 
 --------------------------------------------------------------------------------
 type SessionM = ExceptT SessionError IO
@@ -132,7 +133,7 @@ signup :: (SessionBackend b) => b -> SessionConfig -> Text -> Email -> Password 
 signup db cfg fullname email password ip = do
   validEmail <- validateEmail' email
   passwdHash <- hashPassword (hashSalt cfg) password
-  uid <- liftIO $ nextRandom
+  uid <- liftIO nextRandom
   user <-
     newUser
       db
@@ -213,7 +214,7 @@ hashPassword salt pwd =
 mkNewSession :: User -> IpAddress -> SessionM Session
 mkNewSession user ip = do
   (token, csrf_token) <- newSessionTokens
-  time <- liftIO $ getCurrentTime
+  time <- liftIO getCurrentTime
   toSessionOk $
     Session
       { token = token
