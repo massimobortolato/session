@@ -107,7 +107,7 @@ setSessionCookie ::
   Text ->
   Session ->
   ActionM d ()
-setSessionCookie SessionConfig{sessionExpireSeconds} cookieName Session{token} =
+setSessionCookie SessionConfig{} cookieName Session{token} =
   CK.setCookie $
     CK.defaultSetCookie
       { CK.setCookieName = T.encodeUtf8 cookieName
@@ -115,7 +115,7 @@ setSessionCookie SessionConfig{sessionExpireSeconds} cookieName Session{token} =
       , CK.setCookieHttpOnly = True
       , CK.setCookieSecure = False
       , CK.setCookieSameSite = Just CK.sameSiteStrict
-      , CK.setCookieMaxAge = Just $ fromIntegral sessionExpireSeconds
+      -- , CK.setCookieMaxAge = Just $ fromIntegral sessionExpireSeconds
       }
 
 -- --------------------------------------------------------------------------------

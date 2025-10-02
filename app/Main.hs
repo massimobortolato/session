@@ -3,6 +3,7 @@
 module Main where
 
 import Control.Concurrent qualified
+import Data.Text.Lazy qualified as TL
 import Pages
 import Session.Backends.Postgres
 import Session.Frontends.Scotty
@@ -17,7 +18,8 @@ main = do
     config =
       SessionConfig
         { hashSalt = "1234567890qwertyuiop"
-        , sessionExpireSeconds = 60
+        , sessionAliveTime = Minutes 15
+        , sessionExpireTime = Days 10
         }
     settings =
       ScottyAppSettings
@@ -38,7 +40,7 @@ main = do
 
     post "/login" $ do
       let
-        ko _ = sleep 3 >> redirect "/login"
+        ko _ = sleep 2 >> redirect "/login"
         ok _ = redirect "/"
       withLogin ko ok
 
@@ -48,7 +50,7 @@ main = do
         ko InvalidEmailAddress = redirect "/signup?message=Invalid email address"
         ko InvalidPassword = redirect "/signup?message=Invalid password"
         ko PasswordsMismatch = redirect "/signup?message=Passwords do not match"
-        ko _ = redirect "/signup?message=Error in signup process"
+        ko e = redirect $ "/signup?message=" <> TL.show e
         ok _ = redirect "/"
       withSignup ko ok
  where

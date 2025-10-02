@@ -7,7 +7,9 @@ module Session.Session (
   signup,
   signup',
   Session (..),
+  SessionTime (..),
   User (..),
+  UserRole (..),
   SessionError (..),
   SessionBackend (..),
   SessionM,
@@ -59,13 +61,22 @@ newtype PasswordHash = PasswordHash ByteString
 --------------------------------------------------------------------------------
 data SessionConfig = SessionConfig
   { hashSalt :: HashSalt
-  , sessionExpireSeconds :: Int
+  , sessionAliveTime :: SessionTime
+  , sessionExpireTime :: SessionTime
   }
+
+--------------------------------------------------------------------------------
+data SessionTime
+  = Seconds Int
+  | Minutes Int
+  | Hours Int
+  | Days Int
 
 --------------------------------------------------------------------------------
 data Session = Session
   { token :: SessionToken
   , csrf_token :: SessionCsfrToken
+  , created_at :: UTCTime
   , last_request :: UTCTime
   , ip_address :: IpAddress
   , user :: User
@@ -77,7 +88,11 @@ data User = User
   , fullname :: Text
   , email :: ValidatedEmail
   , last_login :: Maybe UTCTime
+  , role :: UserRole
   }
+
+--------------------------------------------------------------------------------
+data UserRole = RoleUser | RoleAdmin
 
 --------------------------------------------------------------------------------
 data SessionError
@@ -90,6 +105,7 @@ data SessionError
   | NoSession
   | DuplicateUser
   | DatabaseError String
+  deriving (Show)
 
 --------------------------------------------------------------------------------
 type SessionM = ExceptT SessionError IO
@@ -112,11 +128,26 @@ isSession ::
 isSession db cfg token ip = do
   session <- getSession db token (sockToIpAddress ip)
   now <- liftIO getCurrentTime
-  case diffUTCTime now (last_request session) > expirationInterval of
-    True -> toSessionKo NoSession
-    False -> pure session
+  _ <- checkExpired session now
+  checkAlive session now
  where
-  expirationInterval = fromIntegral $ sessionExpireSeconds cfg
+  expirationInterval = fromSessionTime $ sessionExpireTime cfg
+  aliveInterval = fromSessionTime $ sessionAliveTime cfg
+
+  checkExpired s@Session{created_at} now
+    | diffUTCTime now created_at > expirationInterval = toSessionKo NoSession
+    | otherwise = pure s
+
+  checkAlive s@Session{last_request} now
+    | diffUTCTime now last_request > aliveInterval = toSessionKo NoSession
+    | otherwise = pure s
+
+  fromSessionTime = fromIntegral . fromSessionTime'
+
+  fromSessionTime' (Seconds n) = n
+  fromSessionTime' (Minutes n) = 60 * n
+  fromSessionTime' (Hours n) = 60 * 60 * n
+  fromSessionTime' (Days n) = 24 * 60 * 60 * n
 
 --------------------------------------------------------------------------------
 login :: (SessionBackend b) => b -> SessionConfig -> Email -> Password -> SockAddr -> SessionM Session
@@ -137,7 +168,7 @@ signup db cfg fullname email password ip = do
   user <-
     newUser
       db
-      User{user_id = uid, fullname = fullname, email = validEmail, last_login = Nothing}
+      User{user_id = uid, fullname = fullname, email = validEmail, last_login = Nothing, role = RoleUser}
       passwdHash
   session <- mkNewSession user $ sockToIpAddress ip
   session' <- newSession db session
@@ -220,6 +251,7 @@ mkNewSession user ip = do
       { token = token
       , csrf_token = csrf_token
       , last_request = time
+      , created_at = time
       , ip_address = ip
       , user = user
       }
